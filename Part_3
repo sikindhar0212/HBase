@@ -1,0 +1,58 @@
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.BinaryComparator;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.util.Bytes;
+
+
+public class GroupByType {
+	public static String Table_Name = "Movies";
+	
+	public static void main(String[] args) throws Throwable {
+		Configuration conf = HBaseConfiguration.create();        
+		@SuppressWarnings({ "deprecation", "resource" })
+		HTable hTable = new HTable(conf, Table_Name);
+		
+		 Scan scan1 = new Scan();
+		 Scan scan2 = new Scan();
+		 
+		 scan1.addColumn(Bytes.toBytes("Product"), Bytes.toBytes("score"));
+		 scan2.addColumn(Bytes.toBytes("Product"), Bytes.toBytes("helpfulness"));
+	
+		//now we extract the result
+		ResultScanner scanner1 = hTable.getScanner(scan1);
+		ResultScanner scanner2 = hTable.getScanner(scan2); 
+		
+		int ztfcount= 0;
+		double totalscoresum=0;
+		int totalscorecount=0;
+		
+		for(Result result=scanner1.next(); result!=null; result=scanner1.next()) {
+			String data=Bytes.toString(result.value());
+			Double sc=Double.parseDouble(data);
+			if(sc==0 || sc==3.0 || sc==5.0)
+				ztfcount++;
+			totalscoresum+=sc;
+			totalscorecount++;
+		}
+
+		Double totalhelpsum=0.0;
+		int totalhelpcount=0;
+		for(Result result=scanner2.next(); result!=null; result=scanner2.next()) 
+		{
+			String data = Bytes.toString(result.value());
+			String[] ArrayVal = data.split("/");
+			totalhelpsum += Double.parseDouble(ArrayVal[0]);
+			totalhelpcount++;
+		}
+
+		System.out.println("Score count equal to 0,3,5 id "+ztfcount);
+		System.out.println("Score Average "+totalscoresum/totalscorecount);
+		System.out.println("Helpfulness Average "+totalhelpsum/totalhelpcount);
+	}
+}
