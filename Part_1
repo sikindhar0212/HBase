@@ -1,0 +1,129 @@
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+
+public class InsertData extends Configured implements Tool{
+
+	public String Table_Name = "Movies";
+    @SuppressWarnings("deprecation")
+	@Override
+    public int run(String[] argv) throws IOException {
+        Configuration conf = HBaseConfiguration.create();        
+        @SuppressWarnings("resource")
+		HBaseAdmin admin=new HBaseAdmin(conf);        
+        
+        boolean isExists = admin.tableExists(Table_Name);
+        
+        if(isExists == false) {
+	        //create table with column family
+	        HTableDescriptor htb=new HTableDescriptor(Table_Name);
+	        HColumnDescriptor UserFamily = new HColumnDescriptor("User");
+	        HColumnDescriptor ProductFamily = new HColumnDescriptor("Product");
+	        
+	        htb.addFamily(UserFamily);
+	        htb.addFamily(ProductFamily);
+	        admin.createTable(htb);
+        }
+        
+        try {
+    		@SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("/home/sgfvb/Downloads/movies_new.txt"));
+    	    String line;
+    	    
+    	    int row_count=0;
+    	    
+    	    String data;
+    	    while((line = br.readLine()) != null) {
+    	    	if(line.isEmpty()) continue;
+     	    	
+    	    	row_count++;
+    	    	 
+    	    	data=Split_line(line);
+    	    	String productId = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String userId = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String profileName = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String helpfulness = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String score = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String time = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String summary = data;
+    	    	
+    	    	line=br.readLine();
+    	    	data=Split_line(line);
+    	    	String text = data;
+    	    	
+    	    	String key=userId + productId;
+	            Put put = new Put(Bytes.toBytes(key));
+	            
+	            put.add(Bytes.toBytes("User"), Bytes.toBytes("userId"), Bytes.toBytes(userId));
+	            put.add(Bytes.toBytes("User"), Bytes.toBytes("profileName"), Bytes.toBytes(profileName));
+	            
+	            put.add(Bytes.toBytes("Product"), Bytes.toBytes("productId"), Bytes.toBytes(productId));
+	            put.add(Bytes.toBytes("Product"), Bytes.toBytes("helpfulness"), Bytes.toBytes(helpfulness));
+	            put.add(Bytes.toBytes("Product"), Bytes.toBytes("score"), Bytes.toBytes(score));
+	            put.add(Bytes.toBytes("Product"), Bytes.toBytes("time"), Bytes.toBytes(time));
+	            put.add(Bytes.toBytes("Product"), Bytes.toBytes("summary"), Bytes.toBytes(summary));
+	            put.add(Bytes.toBytes("Product"), Bytes.toBytes("text"), Bytes.toBytes(text));
+	            
+    	    	HTable hTable = new HTable(conf, Table_Name);
+    	    	hTable.put(put);
+    	    	hTable.close();    
+	    	}
+    	    
+    	    System.out.println("Inserted " + row_count + " Inserted");
+    	    
+	    } catch (FileNotFoundException e) {
+	    	e.printStackTrace();
+	    } catch (IOException e) {
+	    	e.printStackTrace();
+	    } 
+
+      return 0;
+   }
+    
+    public static String Split_line(String line) {
+
+			if(line != null && !line.isEmpty()) {
+				String[] A =  line.split(":");
+				
+		    	return A[1];
+			}
+    	
+    	return "";
+    }
+    
+    public static void main(String[] argv) throws Exception {
+        int ret = ToolRunner.run(new InsertData(), argv);
+        System.exit(ret);
+    }
+}
